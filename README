@@ -1,0 +1,4 @@
+This is the NetBeans project folder for Image Coder.
+index.html and ImageCoder.jnlp are good for distributing the binary on a webserver. The lib/ directory is required, too.
+Send me an email for help.
+

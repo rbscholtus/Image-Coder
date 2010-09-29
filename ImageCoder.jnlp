@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<jnlp codebase="https://mekong.rmit.edu.vn/~v00132/imagecoder/" href="ImageCoder.jnlp" spec="1.0+">
+    <information>
+        <title>Image Coder</title>
+        <vendor>Barend Scholtus</vendor>
+        <homepage href="https://mekong.rmit.edu.vn/~v00132/imagecoder/"/>
+        <description>Image Coder is a sandbox application in which you can write snippets of Java code to directly manipulate images.</description>
+        <description kind="short">Image Coder is a programming-based image manipulation tool.</description>
+    </information>
+    <update check="timeout"/>
+    <security>
+        <all-permissions/>
+    </security>
+    <resources>
+        <j2se java-vm-args="-Xms64m -Xmx512m" version="1.5+"/>
+        <jar href="ImageCoder.jar" main="true"/>
+        <jar href="lib/javassist.jar"/>
+        <jar href="lib/TableLayout.jar"/>
+        <jar href="lib/TableLayoutBuilders.jar"/>
+    </resources>
+    <application-desc main-class="imagecoder.Main">
+    </application-desc>
+</jnlp>
+
