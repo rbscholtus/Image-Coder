@@ -4,11 +4,9 @@
 package imagecoder;
 
 import java.awt.*;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseMotionListener;
+import java.awt.event.*;
 import java.awt.image.BufferedImage;
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
+import java.beans.*;
 import java.util.ArrayList;
 import javax.swing.JPanel;
 
@@ -140,8 +138,8 @@ public class ImagePanel extends JPanel implements MouseMotionListener {
         if (image != null && e.getX() >= 0 && e.getY() >= 0
                 && e.getX() < image.getWidth() && e.getY() < image.getHeight()) {
             color = image.getRGB(e.getX(), e.getY());
+            firePropertyChange("mouseMoved", e, color);
         }
-        firePropertyChange("mouseMoved", e, color);
     }
 
     public void mouseDragged(MouseEvent e) {
@@ -172,7 +170,7 @@ public class ImagePanel extends JPanel implements MouseMotionListener {
                 r.y = 0;
             }
         } else {
-            r.y = vis.y + vis.height - dy;
+            r.y = vis.y + vis.height - 1 - dy;
             if (r.y >= getHeight()) {
                 r.y = getHeight() - 1;
             }

@@ -31,3 +31,17 @@
 /dist/lib/TableLayout.jar
 /dist/lib/TableLayoutBuilders.jar
 /dist/lib/javassist.jar
+/build/classes/imagecoder/images/color.png
+/build/classes/imagecoder/images/mouse.png
+/build/classes/imagecoder/images/new.png
+/build/classes/imagecoder/images/open.png
+/build/classes/imagecoder/images/redo.png
+/build/classes/imagecoder/images/render.png
+/build/classes/imagecoder/images/revert.png
+/build/classes/imagecoder/images/save.png
+/build/classes/imagecoder/images/settings.png
+/build/classes/imagecoder/images/size.png
+/build/classes/imagecoder/images/undo.png
+/build/classes/imagecoder/images/www.png
+/build/classes/imagecoder/images/zoom.png
+/build/classes/imagecoder/images/zoom2.png
