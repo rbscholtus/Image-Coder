@@ -259,7 +259,6 @@ public class ControlsFrame extends JFrame implements ActionListener {
             saveUI();
 
             // create the filter
-//            progressBar.setValue(progressBar.getMinimum());
             progressBar.setIndeterminate(true);
             progressBar.setStringPainted(false);
             task = compileCode(codePane.getText());
@@ -268,6 +267,7 @@ public class ControlsFrame extends JFrame implements ActionListener {
             imagePanel.addCopyOfLast();
 
             // apply filter to it
+            progressBar.setValue(progressBar.getMinimum());
             progressBar.setStringPainted(true);
             progressBar.setIndeterminate(false);
             task.addPropertyChangeListener(new PropertyChangeListener() {
@@ -389,12 +389,10 @@ public class ControlsFrame extends JFrame implements ActionListener {
     }
 
     public static String makeXYString(int x, int y) {
-        StringBuilder sb = new StringBuilder(17);
-        return sb.append("pos=[").append(x).append(',').append(y).append(']').toString();
+        return new StringBuilder(17).append("pos=[").append(x).append(',').append(y).append(']').toString();
     }
 
     public static String makeColorString(int color) {
-        StringBuilder sb = new StringBuilder(17);
-        return sb.append("rgb=[").append(color >>> 16 & 0xff).append(',').append(color >>> 8 & 0xff).append(',').append(color & 0xff).append(']').toString();
+        return new StringBuilder(17).append("rgb=[").append(color >>> 16 & 0xff).append(',').append(color >>> 8 & 0xff).append(',').append(color & 0xff).append(']').toString();
     }
 }
