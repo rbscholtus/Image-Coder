@@ -13,7 +13,6 @@ import java.io.*;
 import javassist.*;
 import javax.imageio.ImageIO;
 import javax.swing.*;
-import javax.swing.border.BevelBorder;
 import net.sf.robocode.ui.editor.*;
 
 /**
@@ -29,7 +28,8 @@ public class ControlsFrame extends JFrame implements ActionListener {
     private JButton renderButton = new JButton("Render");
     private JButton undoButton = new JButton("Undo");
     private JButton revertButton = new JButton("Revert");
-    private JLabel mouseXYLabel = new JLabel("[]");
+    private JLabel mouseXYLabel = new JLabel(makeXYString(0, 0));
+    private JLabel mouseColorLabel = new JLabel(makeColorString(0));
     private JProgressBar progressBar = new JProgressBar();
     // code panel
     private JEditorPane codePane = new JEditorPane();
@@ -60,7 +60,10 @@ public class ControlsFrame extends JFrame implements ActionListener {
                     PREF, null, codeScrollPane, null, undoButton, null,
                     PREF, null, codeScrollPane, null, revertButton, null,
                     FILL, null, codeScrollPane, null, null, null,
+                    PREF, null, codeScrollPane, null, mouseColorLabel, null,
+                    5, null, codeScrollPane, null, null, null,
                     PREF, null, codeScrollPane, null, mouseXYLabel, null,
+                    5, null, codeScrollPane, null, null, null,
                     PREF, null, codeScrollPane, null, progressBar, null,
                     5, null, null, null, null, null
                 });
@@ -105,12 +108,18 @@ public class ControlsFrame extends JFrame implements ActionListener {
         updateButtons();
 
         // mouse XY postion
+        mouseColorLabel.setHorizontalAlignment(SwingConstants.CENTER);
         mouseXYLabel.setHorizontalAlignment(SwingConstants.CENTER);
         imagePanel.addPropertyChangeListener(new PropertyChangeListener() {
+
             public void propertyChange(PropertyChangeEvent evt) {
                 if ("mouseMoved".equals(evt.getPropertyName())) {
-                    MouseEvent me = (MouseEvent)evt.getNewValue();
-                    mouseXYLabel.setText("["+me.getX()+","+me.getY()+"]");
+                    // XY pos
+                    MouseEvent e = (MouseEvent) evt.getOldValue();
+                    mouseXYLabel.setText(makeXYString(e.getX(), e.getY()));
+                    // color under mouse
+                    int color = (Integer) evt.getNewValue();
+                    mouseColorLabel.setText(makeColorString(color));
                 }
             }
         });
@@ -155,12 +164,6 @@ public class ControlsFrame extends JFrame implements ActionListener {
                 }
             }
         });
-
-        // do a dummy compile to pre-load all related classes
-//        try {
-//            compileCode("");
-//        } catch (Exception e) {
-//        }
     }
 
     public void actionPerformed(ActionEvent e) {
@@ -171,6 +174,7 @@ public class ControlsFrame extends JFrame implements ActionListener {
             saveImageAsEvent();
         } else if (src == renderButton) {
             new Thread() {
+
                 @Override
                 public void run() {
                     createAndFilter();
@@ -267,6 +271,7 @@ public class ControlsFrame extends JFrame implements ActionListener {
             progressBar.setStringPainted(true);
             progressBar.setIndeterminate(false);
             task.addPropertyChangeListener(new PropertyChangeListener() {
+
                 public void propertyChange(PropertyChangeEvent evt) {
                     if (task == null) {
                         return;
@@ -336,10 +341,7 @@ public class ControlsFrame extends JFrame implements ActionListener {
 
     private String makeMethod(String userCode) {
         StringBuilder sb = new StringBuilder(30 + userCode.length());
-        return sb.append("public void filter() {")
-                .append(userCode)
-                .append('}')
-                .toString();
+        return sb.append("public void filter() {").append(userCode).append('}').toString();
     }
 
     private void undoEvent() {
@@ -384,5 +386,15 @@ public class ControlsFrame extends JFrame implements ActionListener {
 
     public void propertyChange(PropertyChangeEvent evt) {
         throw new UnsupportedOperationException("Not supported yet.");
+    }
+
+    public static String makeXYString(int x, int y) {
+        StringBuilder sb = new StringBuilder(17);
+        return sb.append("pos=[").append(x).append(',').append(y).append(']').toString();
+    }
+
+    public static String makeColorString(int color) {
+        StringBuilder sb = new StringBuilder(17);
+        return sb.append("rgb=[").append(color >>> 16 & 0xff).append(',').append(color >>> 8 & 0xff).append(',').append(color & 0xff).append(']').toString();
     }
 }

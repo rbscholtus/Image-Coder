@@ -135,7 +135,13 @@ public class ImagePanel extends JPanel implements MouseMotionListener {
     public void mouseMoved(MouseEvent e) {
         lastScrolledX = e.getXOnScreen();
         lastScrolledY = e.getYOnScreen();
-        firePropertyChange("mouseMoved", null, e);
+        BufferedImage image = getLastImage();
+        int color = 0;
+        if (image != null && e.getX() >= 0 && e.getY() >= 0
+                && e.getX() < image.getWidth() && e.getY() < image.getHeight()) {
+            color = image.getRGB(e.getX(), e.getY());
+        }
+        firePropertyChange("mouseMoved", e, color);
     }
 
     public void mouseDragged(MouseEvent e) {
