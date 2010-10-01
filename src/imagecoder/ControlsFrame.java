@@ -3,6 +3,7 @@
  */
 package imagecoder;
 
+import util.ImageFileChooser;
 import info.clearthought.layout.ComponentArranger;
 import info.clearthought.layout.TableLayout;
 import java.awt.*;
@@ -14,6 +15,7 @@ import javassist.*;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import net.sf.robocode.ui.editor.*;
+import util.MasterFrameBehavior;
 
 /**
  *
@@ -57,6 +59,8 @@ public class ControlsFrame extends JFrame implements ActionListener {
         initEditor();
         initImagePanelCallbacks();
         initFramesBehavior();
+
+        setTransferHandler(new FileDropHandler(this));
     }
 
     public void actionPerformed(ActionEvent e) {
@@ -104,17 +108,21 @@ public class ControlsFrame extends JFrame implements ActionListener {
         }
 
         try {
-            BufferedImage image = ImageIO.read(file);
-            if (image == null) {
-                throw new Exception("Cannot read this type of image.");
-            }
-            imageSizeLabel.setText(makeSizeString(image.getWidth(), image.getHeight()));
-            imagePanel.setImage(image);
+            openImage(file);
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this,
                     "Error while reading file:\n" + e.getMessage(),
                     "Error", JOptionPane.ERROR_MESSAGE);
         }
+    }
+
+    public void openImage(File file) throws Exception {
+        BufferedImage image = ImageIO.read(file);
+        if (image == null) {
+            throw new Exception("Cannot read this type of image.");
+        }
+        imageSizeLabel.setText(makeSizeString(image.getWidth(), image.getHeight()));
+        imagePanel.setImage(image);
     }
 
     private void saveImageAsEvent() {
@@ -256,8 +264,6 @@ public class ControlsFrame extends JFrame implements ActionListener {
         updateButtons();
         setCursor(null);
         progressBar.setVisible(false);
-//        progressBar.setStringPainted(false);
-//        progressBar.setValue(progressBar.getMinimum());
     }
 
     private void updateButtons() {
@@ -339,6 +345,7 @@ public class ControlsFrame extends JFrame implements ActionListener {
         RobocodeEditorKit editorKit = new RobocodeEditorKit();
         codePane.setEditorKitForContentType("text/java", editorKit);
         codePane.setContentType("text/java");
+        codePane.setDragEnabled(true);
         codePane.addKeyListener(new KeyAdapter() {
 
             @Override
@@ -372,7 +379,7 @@ public class ControlsFrame extends JFrame implements ActionListener {
                 if ("mouseMoved".equals(evt.getPropertyName())) {
                     // XY pos
                     MouseEvent e = (MouseEvent) evt.getOldValue();
-                    mouseXYLabel.setText(makeXYString(e.getX()+1, e.getY()+1));
+                    mouseXYLabel.setText(makeXYString(e.getX() + 1, e.getY() + 1));
                     // color under mouse
                     int color = (Integer) evt.getNewValue();
                     mouseColorLabel.setText(makeColorString(color));
@@ -384,44 +391,10 @@ public class ControlsFrame extends JFrame implements ActionListener {
     private void initFramesBehavior() {
         // frames behavior
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        addWindowListener(new WindowAdapter() {
 
-            private long lastActivationTime;
-
-            @Override
-            public void windowIconified(WindowEvent e) {
-                int state = imageFrame.getExtendedState();
-                if ((state & JFrame.ICONIFIED) == 0) {
-                    state |= JFrame.ICONIFIED;
-                    imageFrame.setExtendedState(state);
-                }
-            }
-
-            @Override
-            public void windowDeiconified(WindowEvent e) {
-                int state = imageFrame.getExtendedState();
-                if ((state & JFrame.ICONIFIED) != 0) {
-                    state &= ~JFrame.ICONIFIED;
-                    imageFrame.setExtendedState(state);
-                    toFront();
-                    requestFocus();
-                }
-            }
-
-            @Override
-            public void windowActivated(WindowEvent e) {
-                if (System.currentTimeMillis() > lastActivationTime + 500) {
-                    lastActivationTime = System.currentTimeMillis();
-                    int state = imageFrame.getExtendedState();
-                    if ((state & JFrame.ICONIFIED) == 0) {
-                        imageFrame.toFront();
-                        imageFrame.requestFocus();
-                        toFront();
-                        requestFocus();
-                    }
-                }
-            }
-        });
+        MasterFrameBehavior master = new MasterFrameBehavior(this);
+        addWindowListener(master);
+        master.addSlaveJFrame(imageFrame);
     }
 
     public static String makeXYString(int x, int y) {
