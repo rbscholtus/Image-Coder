@@ -45,3 +45,9 @@
 /build/classes/imagecoder/images/www.png
 /build/classes/imagecoder/images/zoom.png
 /build/classes/imagecoder/images/zoom2.png
+/build/classes/.netbeans_automatic_build
+/build/classes/imagecoder/FileDropHandler.class
+/build/classes/util/ImageFileChooser$ImageReaderFileFilter.class
+/build/classes/util/ImageFileChooser$ImageWriterFileFilter.class
+/build/classes/util/ImageFileChooser.class
+/build/classes/util/MasterFrameBehavior.class

@@ -1,7 +1,7 @@
 /*
  * ImageFileChooser.java
  */
-package imagecoder;
+package util;
 
 import java.awt.Component;
 import java.awt.HeadlessException;
