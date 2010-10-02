@@ -4,6 +4,7 @@
 package imagecoder;
 
 import java.awt.Dimension;
+import java.awt.image.BufferedImage;
 import javax.swing.*;
 
 /**
@@ -11,24 +12,35 @@ import javax.swing.*;
  */
 public class ImageFrame extends JFrame {
 
-    private ImagePanel imagePanel = new ImagePanel();
-    private JScrollPane imageScrollPane = new JScrollPane(imagePanel);
+    private ImageLabel imageLabel = new ImageLabel();
+    private JScrollPane imageScrollPane = new JScrollPane(imageLabel);
+    private static final int MAX_WIDTH = 1024;
+    private static final int MAX_HEIGHT = 768;
 
     public ImageFrame() {
-        setTitle("Image View");
+        super("Image View");
         setContentPane(imageScrollPane);
         setMinimumSize(new Dimension(320, 240));
-        setPreferredSize(new Dimension(640, 480));
         pack();
-
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     }
 
     public JScrollPane getImageScrollPane() {
         return imageScrollPane;
     }
 
-    public ImagePanel getImagePanel() {
-        return imagePanel;
+    public ImageLabel getImageLabel() {
+        return imageLabel;
+    }
+
+    void setImage(BufferedImage image) {
+        imageLabel.setImage(image);
+        imageScrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        imageScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER);
+        pack();
+        if (getWidth() > MAX_WIDTH || getHeight() > MAX_HEIGHT) {
+            setSize(new Dimension(MAX_WIDTH, MAX_HEIGHT));
+        }
+        imageScrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        imageScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
     }
 }

@@ -3,7 +3,6 @@
  */
 package imagecoder;
 
-import util.ImageFileChooser;
 import info.clearthought.layout.ComponentArranger;
 import info.clearthought.layout.TableLayout;
 import java.awt.*;
@@ -11,17 +10,18 @@ import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.beans.*;
 import java.io.*;
+import java.net.URI;
 import javassist.*;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import net.sf.robocode.ui.editor.*;
-import util.MasterFrameBehavior;
+import util.*;
 
 /**
  *
  * @author Barend Scholtus
  */
-public class ControlsFrame extends JFrame implements ActionListener {
+public class ControlsFrame extends MasterJFrame implements ActionListener {
 
     // controls panel
     private ImageFileChooser chooser;
@@ -30,6 +30,7 @@ public class ControlsFrame extends JFrame implements ActionListener {
     private JButton revertButton = new JButton(new ImageIcon(getClass().getResource("images/revert.png")));
     private JButton undoButton = new JButton(new ImageIcon(getClass().getResource("images/undo.png")));
     private JButton renderButton = new JButton(new ImageIcon(getClass().getResource("images/render.png")));
+    private JButton wwwButton = new JButton(new ImageIcon(getClass().getResource("images/www.png")));
     private JLabel imageSizeLabel = new JLabel(makeSizeString(0, 0),
             new ImageIcon(getClass().getResource("images/size.png")), SwingConstants.LEADING);
     private JLabel mouseXYLabel = new JLabel(makeXYString(0, 0),
@@ -43,24 +44,49 @@ public class ControlsFrame extends JFrame implements ActionListener {
     private JScrollPane codeScrollPane = new JScrollPane(codePane);
     // reference to the image frame and panel
     private ImageFrame imageFrame;
-    private ImagePanel imagePanel;
+    private ImageLabel imagePanel;
     // class generator
     private int sequenceNumber = 0;
     // background task
     private ImageFilterTask task;
+    private static final String INTRO_TEXT = "// Welcome to Image Coder!\n"
+            + "//\n"
+            + "// This is Image Coder's main window. You type snippets of Java code here to\n"
+            + "// manipulate the image in the Image View. For examples and a list of commands,\n"
+            + "// please visit http://github.com/rbscholtus/Image-Coder/wiki\n"
+            + "//\n"
+            + "// Before you start, you have to open an image though. Dp this by pressing the Open\n"
+            + "// image icon, or by dragging an image in one of the windows.\n"
+            + "\n// EXAMPLE: make image greyscale\n"
+            + "for (int x = 0; x < width(); x++) {\n"
+            + "    setProgress(x, width());\n"
+            + "    for (int y = 0; y < height(); y++) {\n"
+            + "        int avg = ( red(x,y) + green(x,y) + blue(x,y) ) / 3;\n"
+            + "        setRGB(x, y, makeRGB(avg, avg, avg));\n"
+            + "    }\n"
+            + "}\n";
+    private static final String WWW_URI = "http://github.com/rbscholtus/Image-Coder/wiki/Examples";
 
     public ControlsFrame(ImageFrame iFrame) {
         setTitle("Image Coder");
 
         this.imageFrame = iFrame;
-        this.imagePanel = imageFrame.getImagePanel();
+        this.imagePanel = imageFrame.getImageLabel();
 
         initLayout();
         initEditor();
         initImagePanelCallbacks();
-        initFramesBehavior();
 
+        // frames behavior
         setTransferHandler(new FileDropHandler(this));
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        imageFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        addSlaveJFrame(imageFrame);
+        imageFrame.setTransferHandler(new FileDropHandler(this));
+
+        progressBar.setValue(progressBar.getMinimum());
+        progressBar.setIndeterminate(false);
+        pack();
     }
 
     public void actionPerformed(ActionEvent e) {
@@ -81,9 +107,15 @@ public class ControlsFrame extends JFrame implements ActionListener {
             undoEvent();
         } else if (src == revertButton) {
             revertEvent();
+        } else if (src == wwwButton) {
+            try {
+                Desktop.getDesktop().browse(URI.create(WWW_URI));
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Error",
+                        "Could not access your browser, or action not allowed.\n" + ex.getMessage(),
+                        JOptionPane.ERROR_MESSAGE);
+            }
         }
-
-        updateButtons();
     }
 
     private void openImageEvent() {
@@ -122,7 +154,9 @@ public class ControlsFrame extends JFrame implements ActionListener {
             throw new Exception("Cannot read this type of image.");
         }
         imageSizeLabel.setText(makeSizeString(image.getWidth(), image.getHeight()));
-        imagePanel.setImage(image);
+        imageFrame.setImage(image);
+        imageFrame.setTitle(file.getName());
+        updateButtons();
     }
 
     private void saveImageAsEvent() {
@@ -130,6 +164,10 @@ public class ControlsFrame extends JFrame implements ActionListener {
             BufferedImage image = imagePanel.getLastImage();
             if (image == null) {
                 throw new Exception("There is no image that can be saved.");
+            }
+
+            if (chooser == null) {
+                chooser = new ImageFileChooser();
             }
 
             int ret = chooser.showSaveDialog(this);
@@ -143,6 +181,8 @@ public class ControlsFrame extends JFrame implements ActionListener {
                     || !ImageIO.write(image, ext, file)) {
                 throw new Exception("This file type (" + ext + ") is not supported by your Java system.");
             }
+
+            imageFrame.setTitle(file.getName());
         } catch (IOException e) {
             JOptionPane.showMessageDialog(this,
                     "Error during writing:\n" + e.getMessage()
@@ -156,46 +196,38 @@ public class ControlsFrame extends JFrame implements ActionListener {
     }
 
     private void createAndFilter() {
+        // buttons off, change cursor
+        updateButtons(false);
+        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+
+        // create the filter
         try {
-            // buttons off, progressbar on
-            saveUI();
-
-            // create the filter
             progressBar.setIndeterminate(true);
-//            progressBar.setStringPainted(false);
-            task = compileCode(codePane.getText());
-
-            // create a copy of last image
-            imagePanel.addCopyOfLast();
-
-            // apply filter to it
-            progressBar.setValue(progressBar.getMinimum());
-//            progressBar.setStringPainted(true);
-            progressBar.setIndeterminate(false);
-            task.addPropertyChangeListener(new PropertyChangeListener() {
-
-                public void propertyChange(PropertyChangeEvent evt) {
-                    if (task == null) {
-                        return;
-                    }
-                    if ("progress".equals(evt.getPropertyName())) {
-                        progressBar.setValue(task.getProgress());
-                    } else if ("state".equals(evt.getPropertyName())
-                            && SwingWorker.StateValue.DONE.equals(evt.getNewValue())) {
-                        Toolkit.getDefaultToolkit().beep();
-                        progressBar.setValue(progressBar.getMaximum());
-                        imagePanel.repaint();
-                        restoreUI();
-                        task = null;
-                    }
-                }
-            });
-            imagePanel.applyFilter(task);
+            String code = codePane.getText().trim();
+            if (code.isEmpty()) {
+                throw new Exception("Nothing to do. Write some code first.");
+            }
+            task = compileCode(code);
         } catch (CannotCompileException cce) {
-            JOptionPane.showMessageDialog(this,
-                    "There is a \"Cannot Compile\" error:\n" + cce.getMessage(),
-                    "Error", JOptionPane.ERROR_MESSAGE);
+            String mess = cce.getMessage();
+            if (mess.startsWith("[source error]")) {
+                mess = mess.substring(15);
+            }
+            JOptionPane.showMessageDialog(this, mess,
+                    "Error in source", JOptionPane.ERROR_MESSAGE);
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, e.getMessage(),
+                    "General error", JOptionPane.ERROR_MESSAGE);
+        }
+
+        if (task == null) {
             restoreUI();
+            return;
+        }
+
+        // create a copy of last image
+        try {
+            imagePanel.addCopyOfLast();
         } catch (OutOfMemoryError e) {
             if (imagePanel.canUndo()) {
                 int ret = JOptionPane.showConfirmDialog(this, "Out of memory:\n"
@@ -213,12 +245,33 @@ public class ControlsFrame extends JFrame implements ActionListener {
                         "Out of memory", JOptionPane.ERROR_MESSAGE);
             }
             restoreUI();
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this,
-                    "Error while compiling or executing your code:\n" + e.getMessage(),
-                    "Error", JOptionPane.ERROR_MESSAGE);
-            restoreUI();
+            return;
         }
+
+        // apply filter to it
+        progressBar.setIndeterminate(false);
+        progressBar.setValue(progressBar.getMinimum());
+        task.addPropertyChangeListener(new PropertyChangeListener() {
+
+            public void propertyChange(PropertyChangeEvent evt) {
+                if (task == null) {
+                    return;
+                }
+                if ("progress".equals(evt.getPropertyName())) {
+                    progressBar.setValue(task.getProgress());
+                } else if ("state".equals(evt.getPropertyName())
+                        && SwingWorker.StateValue.DONE.equals(evt.getNewValue())) {
+                    Toolkit.getDefaultToolkit().beep();
+                    progressBar.setValue(progressBar.getMaximum());
+                    imagePanel.repaint();
+                    restoreUI();
+                    task = null;
+                }
+            }
+        });
+        imagePanel.applyFilter(task);
+
+        restoreUI();
     }
 
     private ImageFilterTask compileCode(String userCode) throws Exception {
@@ -230,13 +283,12 @@ public class ControlsFrame extends JFrame implements ActionListener {
         cp.insertClassPath(new ClassClassPath(this.getClass()));
         CtClass imageBase = cp.get("imagecoder.ImageFilterTask");
 
-        // create new Filter class, if none
+        // create new Filter class
         String filterClassName = "Filter" + (sequenceNumber++);
-        ImageFilterTask filter;// = filters.get(filterClassName);
         CtClass filterCtClass = cp.makeClass(filterClassName, imageBase);
         CtMethod filterCtMethod = CtNewMethod.make(filterCode, filterCtClass);
         filterCtClass.addMethod(filterCtMethod);
-        filter = (ImageFilterTask) filterCtClass.toClass().newInstance();
+        ImageFilterTask filter = (ImageFilterTask) filterCtClass.toClass().newInstance();
 
         return filter;
     }
@@ -248,22 +300,19 @@ public class ControlsFrame extends JFrame implements ActionListener {
 
     private void undoEvent() {
         imagePanel.undo();
+        updateButtons();
     }
 
     private void revertEvent() {
         imagePanel.revert();
-    }
-
-    private void saveUI() {
-        updateButtons(false);
-        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
-        progressBar.setVisible(true);
+        updateButtons();
     }
 
     private void restoreUI() {
+        progressBar.setIndeterminate(false);
+        progressBar.setValue(progressBar.getMinimum());
         updateButtons();
         setCursor(null);
-        progressBar.setVisible(false);
     }
 
     private void updateButtons() {
@@ -288,7 +337,7 @@ public class ControlsFrame extends JFrame implements ActionListener {
 
     private void initLayout() {
         setMinimumSize(new Dimension(450, 240));
-        setPreferredSize(new Dimension(800, 360));
+        setPreferredSize(new Dimension(640, 300));
 
         Color c = getContentPane().getBackground().darker();
 
@@ -302,6 +351,8 @@ public class ControlsFrame extends JFrame implements ActionListener {
         undoButton.addActionListener(this);
         revertButton.setToolTipText("Revert to original");
         revertButton.addActionListener(this);
+        wwwButton.setToolTipText("Find Image Coder on the web");
+        wwwButton.addActionListener(this);
 
         JToolBar toolbar = new JToolBar();
         toolbar.add(openImageButton);
@@ -311,6 +362,8 @@ public class ControlsFrame extends JFrame implements ActionListener {
         toolbar.add(undoButton);
         toolbar.addSeparator();
         toolbar.add(renderButton);
+        toolbar.addSeparator();
+        toolbar.add(wwwButton);
         toolbar.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, c));
         updateButtons();
 
@@ -336,8 +389,6 @@ public class ControlsFrame extends JFrame implements ActionListener {
         add(toolbar, BorderLayout.NORTH);
         add(codeScrollPane);
         add(statusPanel, BorderLayout.SOUTH);
-
-        pack();
     }
 
     private void initEditor() {
@@ -345,7 +396,7 @@ public class ControlsFrame extends JFrame implements ActionListener {
         RobocodeEditorKit editorKit = new RobocodeEditorKit();
         codePane.setEditorKitForContentType("text/java", editorKit);
         codePane.setContentType("text/java");
-        codePane.setDragEnabled(true);
+        codePane.setText(INTRO_TEXT);
         codePane.addKeyListener(new KeyAdapter() {
 
             @Override
@@ -386,15 +437,6 @@ public class ControlsFrame extends JFrame implements ActionListener {
                 }
             }
         });
-    }
-
-    private void initFramesBehavior() {
-        // frames behavior
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-
-        MasterFrameBehavior master = new MasterFrameBehavior(this);
-        addWindowListener(master);
-        master.addSlaveJFrame(imageFrame);
     }
 
     public static String makeXYString(int x, int y) {

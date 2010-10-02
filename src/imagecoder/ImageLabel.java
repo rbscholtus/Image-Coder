@@ -1,5 +1,5 @@
 /*
- * ImagePanel.java
+ * ImageLabel.java
  */
 package imagecoder;
 
@@ -8,44 +8,52 @@ import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.beans.*;
 import java.util.ArrayList;
-import javax.swing.JPanel;
+import javax.swing.*;
 
 /**
  *
  * @author Barend Scholtus
  */
-public class ImagePanel extends JPanel implements MouseMotionListener {
+public class ImageLabel extends JLabel implements MouseMotionListener {
 
+    public static final int MIN_PROGRESS_TO_REPAINT = 5;
     private ArrayList<BufferedImage> images = new ArrayList<BufferedImage>();
     private int lastRepaintProgress;
-    public static final int MINIMUM_PROGRESS_TO_REPAINT = 5;
     private int lastScrolledX;
     private int lastScrolledY;
 
-    public ImagePanel() {
-        setLayout(null);
+    public ImageLabel() {
+        super("No image loaded.", SwingConstants.CENTER);
         addMouseMotionListener(this);
     }
 
     @Override
     protected void paintComponent(Graphics g) {
-        super.paintComponent(g);
 
-        if (!images.isEmpty()) {
-            g.drawImage(images.get(images.size() - 1), 0, 0, this);
+        BufferedImage image = getLastImage();
+        if (image == null || image.getWidth() < getWidth() || image.getHeight() < getHeight()) {
+            super.paintComponent(g);
+        }
+        if (image != null) {
+            g.drawImage(getLastImage(), 0, 0, this);
         }
     }
 
     public void setImage(BufferedImage image) {
         if (image == null) {
-            return;
+            throw new IllegalArgumentException("image cannot be null");
+        }
+
+        if (getLayout() != null) {
+            removeAll();
+            setLayout(null);
         }
 
         images.clear();
         images.add(image);
+        setText(null);
         setPreferredSize(new Dimension(image.getWidth(), image.getHeight()));
-        revalidate();
-        repaint();
+        invalidate();
     }
 
     public void applyFilter(ImageFilterTask filterTask) {
@@ -55,18 +63,19 @@ public class ImagePanel extends JPanel implements MouseMotionListener {
 
         lastRepaintProgress = 0;
         filterTask.addPropertyChangeListener(new PropertyChangeListener() {
+
             public void propertyChange(PropertyChangeEvent evt) {
                 if ("progress".equals(evt.getPropertyName())
                         && evt.getNewValue() instanceof Integer) {
                     int newProgress = (Integer) evt.getNewValue();
-                    if (newProgress > lastRepaintProgress + MINIMUM_PROGRESS_TO_REPAINT) {
+                    if (newProgress > lastRepaintProgress + MIN_PROGRESS_TO_REPAINT) {
                         repaint();
                         lastRepaintProgress = newProgress;
                     }
                 }
             }
         });
-        filterTask.filter(images.get(images.size()-1));
+        filterTask.filter(images.get(images.size() - 1));
     }
 
     public void undo() {

@@ -3,8 +3,8 @@
  */
 package imagecoder;
 
+import java.awt.DisplayMode;
 import java.awt.GraphicsEnvironment;
-import java.awt.Point;
 import javax.swing.*;
 
 /**
@@ -23,14 +23,14 @@ public class Main {
         final ImageFrame viewer = new ImageFrame();
         final ControlsFrame controls = new ControlsFrame(viewer);
 
-        Point p = GraphicsEnvironment.getLocalGraphicsEnvironment().getCenterPoint();
-        p.translate(-100 - viewer.getWidth()/2, -100 - viewer.getHeight() / 2);
-        viewer.setLocation(p);
-        p = GraphicsEnvironment.getLocalGraphicsEnvironment().getCenterPoint();
-        p.translate(100 - controls.getWidth()/2, 100 - controls.getHeight()/2);
-        controls.setLocation(p);
-
-        viewer.setVisible(true);
+        DisplayMode mode = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDisplayMode();
+        System.out.println("" + mode.getHeight());
+        controls.setLocation(mode.getWidth() / 2 - controls.getWidth() / 2,
+                150 + mode.getHeight() / 2 - controls.getHeight() / 2);
         controls.setVisible(true);
+
+        viewer.setLocation(-150 + mode.getWidth() / 2 - viewer.getWidth() / 2,
+                -150 + mode.getHeight() / 2 - viewer.getHeight() / 2);
+        viewer.setVisible(true);
     }
 }
