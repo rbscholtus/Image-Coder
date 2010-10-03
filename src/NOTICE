@@ -1,0 +1,25 @@
+Image Coder
+Copyright 2010 Barend Scholtus
+
+This product includes software developed by Barend Scholtus.
+
+Portions of this software (i.e. the net.sf.robocode.ui.editor package) were
+developed by Mathew A. Nelson and Robocode contributors. A part of this
+package has been extracted from it's original source, and slightly modified to
+integrate in the Image Coder project. The original source is available from
+    http://sourceforge.net/projects/robocode/files/
+
+Portions of this software use the TableLayout library package, which is open
+source software, written by and copyright 2001 Daniel Barbalace. This package
+can be redistributed free of charge in unmodified binary form. The original
+software is available from
+    https://tablelayout.dev.java.net/
+
+Java bytecode manipulation support is provided by the Javassist library
+package, which is open source software, written by, and copyright by Shigeru
+Chiba. The original software is available from
+    http://www.jboss.org/javassist/downloads.html
+
+The Diagona Icons icon set is copyright 2007 Yusuke Kamiyamane. The icons are
+free for any personal or commercial projects. They are available from
+    http://p.yusukekamiyamane.com/
